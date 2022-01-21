@@ -12,9 +12,11 @@ public class ConfigurationManager {
 	
 	private static File configFile;
 	
-	private static int DEFAULT_PORT = 8080;
-	private static int DEFAULT_THREAD_COUNT = 3;
-	private static String DEFAULT_ROOT = "./public_html";
+	private static final String HOME_DIR = System.getProperty("user.home");
+	private static final String PROGRAM_DIR = HOME_DIR + "/.JHttpServer"; 
+	private static final int DEFAULT_PORT = 8080;
+	private static final int DEFAULT_THREAD_COUNT = 3;
+	private static final String DEFAULT_ROOT = PROGRAM_DIR + "/public_html";
 	
 	private Properties prop = new Properties();
 	
@@ -29,7 +31,23 @@ public class ConfigurationManager {
 				e.printStackTrace();
 			}
 		} else {
+			createConfigFolder(configPath);
 			createDefaultConfig();
+		}
+	}
+	
+	public void createConfigFolder(String configPath) {
+		File progPath = new File(PROGRAM_DIR);
+		if(!Files.exists(Paths.get(PROGRAM_DIR))) {
+			progPath.mkdir();
+		}
+		
+		int index = configPath.lastIndexOf('/');
+	    String dir = configPath.substring(0,index);
+	    
+	    File confPath = new File(dir);
+		if(!Files.exists(Paths.get(dir))) {
+			confPath.mkdir();
 		}
 	}
 	

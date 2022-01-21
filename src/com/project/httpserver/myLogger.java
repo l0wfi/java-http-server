@@ -9,6 +9,8 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 public class myLogger {
+	private final static String HOME_DIR = System.getProperty("user.home");
+	
 	private static myLogger myLogger;
     private static Logger logger;    
     private static FileHandler fh;
@@ -18,10 +20,10 @@ public class myLogger {
     	if (myLogger != null) {
             return;
         }
-    	checkLogDir("./logs");
+    	checkLogDir(HOME_DIR + "/.JHttpServer/logs");
 		try {
 			// Create a FileHandler on the log file and set append to true
-			fh = new FileHandler("./logs/server.log", true);
+			fh = new FileHandler(HOME_DIR + "/.JHttpServer/logs/server.log", true);
 		} catch (SecurityException | IOException e) {
 			e.printStackTrace();
 		}

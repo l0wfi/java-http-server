@@ -10,7 +10,8 @@ import java.util.logging.Logger;
 
 public class Server {
 	
-	private static final String DEFAULT_CONFIG_PATH = "./config/server.properties";
+	private static final String DEFAULT_CONFIG_PATH = System.getProperty("user.home") +
+			"/.JHttpServer/config/server.properties";
 	
 	private static int serverPort;
 	private static int serverThreadCount;

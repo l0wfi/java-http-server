@@ -10,6 +10,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,10 +22,13 @@ import javax.xml.crypto.Data;
 
 public class RequestHandler implements Runnable {
 	
-	private static final String CRLF = "\r\n";
 	private Socket socket;
 	private BufferedReader in;
 	private DataOutputStream out;
+	
+	private Request clientReq;
+	private Response serverResp;
+	private int contentLength = -1;
 	
 	private static myLogger myLogger;
 	private static Logger logger;
@@ -49,85 +53,45 @@ public class RequestHandler implements Runnable {
 		in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		out = new DataOutputStream(socket.getOutputStream());
 
-		String startLine = in.readLine();
+		String requestLine = in.readLine();
 		
-		String headers = "";
-		while (in.ready()) {
-			headers += in.readLine();
+		ArrayList<String> headers = new ArrayList<String>();
+		
+		String line = "";
+		while ((line = in.readLine()) != null && (line.length() != 0)) {
+			if(line.contains("Content-Length:")) {
+				contentLength = Integer.parseInt(line.split(": ")[1]);
+			}
+			headers.add(line);
+		}
+		
+		String postContent = "";
+		if(contentLength != -1) {
+			// char array with size of content
+            char [] contentArray = new char[contentLength];
+            // read bytes from BufferedReader and store in array
+            in.read(contentArray, 0, contentLength);
+            // convert char array to string
+            postContent = new String(contentArray);
 		}
 		
 		System.out.println(headers);
-
+		
 		logger.info("Request received, parsing");
 		
-		String[] requestParams = startLine.split(" ");
-		String method = requestParams[0];
-		String target = requestParams[1];
-		if (target.equals("/")) {
-			target = "/index.html";
+		if (postContent.isEmpty()) {
+			clientReq = new Request(requestLine, headers);
+		}
+		else {
+			clientReq = new Request(requestLine, headers, postContent); 
 		}
 		
-		logger.info(String.format("Request target: %s", target));
-		logger.info("Sending HTTP response");
-		
-		sendResponse(target);
+		logger.info("Sending response");
+		serverResp = new Response(clientReq);
+		serverResp.sendTo(out);
 		
 		in.close();
 		out.close();
 	}
 	
-	private void sendResponse(String targetName) throws Exception{
-		String statusLine = null;
-		String entityHeader = null;
-		String messageBody = null;
-		
-		String targetPath = Server.serverRootDir + targetName;
-		File targetFile = new File(targetPath);
-		
-		if(targetFile.exists()) {
-			statusLine = "HTTP/1.1 200 OK" + CRLF;
-			entityHeader = "Content-type: " + getContentType(targetName) + CRLF;
-			
-		} else {
-			statusLine = "HTTP/1.0 404 Not Found" + CRLF;
-            entityHeader = "Content-type: text/html" + CRLF;
-            messageBody = "<html>" +
-                    	    "<head>" +
-                    		  "<title>Errore 404</title>" +
-                    		"</head>" +
-                    		"<body>404 Not Found</body>" +
-                    	  "</html>";
-		}
-		
-		out.writeBytes(statusLine);
-		out.writeBytes(entityHeader);
-		out.writeBytes(CRLF);
-		
-		if (messageBody == null) { 
-			logger.info("Sending message body");
-			FileInputStream fis = new FileInputStream(targetFile);
-			byte[] buffer = new byte[1024];
-	        int bytes = 0;
-	
-	        while ((bytes = fis.read(buffer)) != -1) {
-	            out.write(buffer, 0, bytes);
-	        }
-	        fis.close();
-		} else {
-			logger.info("Sending Error 404");
-			out.writeBytes(messageBody);
-		}
-	}
-	
-	private String getContentType(String targetName) {
-		String extension = targetName.split("\\.")[1];
-		
-		if (extension == "html" || extension == "html") {
-			return "text/html";
-		} else if (extension == "png" || extension == "gif"
-				|| extension == "jpg" || extension == "jpeg") {
-			return "image/" + extension;
-		}
-		return null;
-	}
 }
