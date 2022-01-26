@@ -104,7 +104,10 @@ public class Response {
 			out.writeBytes(CRLF + CRLF);
 		}
 		
-		logResponse();
+		//Log the client IP, the request and its outcome
+		logger.info(String.format("%s - \"%s %s %s\" - %s %s",
+				ip, method, target, version,
+				statusCode[0], statusCode[1]));
 	}
 	
 	//Return true if method is supported
@@ -152,6 +155,7 @@ public class Response {
 		//Open requested file
 		FileInputStream fis = new FileInputStream(Server.serverRootDir + target);
 		
+		//Double carriage return to signify beginning of message body
 		out.writeBytes(CRLF + CRLF);
 		
 		//Create a 1KiB buffer
@@ -171,13 +175,6 @@ public class Response {
 	private String getDate() {
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O");
 		return dtf.format(ZonedDateTime.now(ZoneOffset.UTC));
-	}
-	
-	//Log the client IP, the request and its outcome
-	private void logResponse() {
-		logger.info(String.format("%s - \"%s %s %s\" - %s %s",
-				ip, method, target, version,
-				statusCode[0], statusCode[1]));
 	}
 	
 }
