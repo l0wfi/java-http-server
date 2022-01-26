@@ -29,6 +29,8 @@ public class Server {
 	private static myLogger myLogger;
 	private static Logger logger;
 	
+	
+	//Server and FixedThreadPool creation
 	public static void main(String[] args) {
 		Server serv = new Server();
 		pool = Executors.newFixedThreadPool(serverThreadCount);
@@ -36,6 +38,7 @@ public class Server {
 		
 	}
 	
+	//Logger initialization, extraction of configuration parameters
 	public Server() {
 		myLogger = new myLogger();
 		logger = myLogger.getLogger();
@@ -44,10 +47,11 @@ public class Server {
 		serverThreadCount = conf.getThreadCount();
 		serverRootDir = conf.getRootDir();
 		
-		logger.info(String.format("Starting: PORT %d, THREADS %d, ROOT DIR %s",
+		logger.info(String.format("Listening: PORT %d, THREADS %d, ROOT DIR %s",
 				serverPort, serverThreadCount, serverRootDir));
 	}
 	
+	//Listen for new connections on the welcoming socket
 	public void listen() {
 		try {
 			welcomingSocket = new ServerSocket(serverPort);
@@ -64,7 +68,7 @@ public class Server {
 				logger.log(Level.SEVERE, "Welcoming socket accept error", e.getCause());
 				e.printStackTrace();
 			}
-			
+			//Execute a RequestHandler with a thread from the pool
 			pool.execute(new RequestHandler(connectionSocket));
 		}
 		try {

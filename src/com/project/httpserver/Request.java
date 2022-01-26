@@ -44,16 +44,22 @@ public class Request {
     }
     
     private void parseRequestLine() {
+    	//Split request line at every whitespace
     	String[] elements = requestLine.split("\\s");
+    	
 		method = elements[0];
 		target = elements[1];
+		
+		//If target contains GET parameters split the path and the parameters
 		if (elements[1].contains("?")) {
 			target = elements[1].split("\\?", 2)[0];
 			GETParams = elements[1].split("\\?", 2)[1];
 		}
+		//If the target is the root
 		if (target.equals("/")) {
 			target = "/index.html";
 		}
+		
 		version = elements[2];
     }
     
@@ -66,13 +72,16 @@ public class Request {
     }
 
     public String getMIMEType() {
+    	//Split filename at "." and get file extension
     	String extension = target.split("\\.")[1];
+    	
 		if (extension.equals("htm") || extension.equals("html")) {
 			return "text/html";
 		} else if (extension.equals("png") || extension.equals("gif")
 				|| extension.equals("jpg") || extension.equals("jpeg")) {
 			return "image/" + extension;
 		}
+		
 		return null;
     }
     

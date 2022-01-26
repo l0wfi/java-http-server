@@ -47,6 +47,7 @@ public class Response {
 			+	"</body>"
 			+"</html>";
 	
+	//Initialize logger and get request information
 	public Response(Request req) {
 		myLogger = new myLogger();
 		logger = myLogger.getLogger();
@@ -60,9 +61,11 @@ public class Response {
 		this.POSTParams = req.getPOSTParams();
 	}
 	
+	//Create a response and send it
 	public void sendTo(DataOutputStream out) throws IOException {
 		statusCode = findStatusCode();
 		createStatusLine();
+		
 		out.write(statusLine.getBytes());
 		
 		responseHeaders = CRLF + "Date: " + getDate();
@@ -104,6 +107,7 @@ public class Response {
 		logResponse();
 	}
 	
+	//Return true if method is supported
 	private boolean supportedMethod() {
 		if (method.equals("GET") || method.equals("POST") || method.equals("HEAD")) {
 			return true;
@@ -112,20 +116,26 @@ public class Response {
 	}
 	
 	private String[] findStatusCode() {
+		//If method is unsupported
 		if (!supportedMethod()) {
 			return new String[] {"501" ,"Not Implemented"};
-			
-		} else if (!new File(Server.serverRootDir + target).exists()) {
-			return new String[] {"404", "Not Found"};
-			
 		}
+		//If file doesn't exist
+		if (!new File(Server.serverRootDir + target).exists()) {
+			return new String[] {"404", "Not Found"};
+		}
+		
+		//Get length of requested resource
 		File targetFile = new File(Server.serverRootDir + target);
 		contentLength = -1;
-		if(targetFile.exists())
+		if(targetFile.exists()) {
 			contentLength = targetFile.length();
+		}
+		
 		return new String[] {"200", "OK"};
 	}
 	
+	//Create the HTTP status line
 	private void createStatusLine() {
 		statusLine = "HTTP/1.1" + " ";
 		statusLine += statusCode[0] + " ";
@@ -137,14 +147,18 @@ public class Response {
 				.replace("$MESSAGE", message);
 	}
 	
+	//Write target file to output stream
 	private void writeTargetTo(DataOutputStream out) throws Exception {
+		//Open requested file
 		FileInputStream fis = new FileInputStream(Server.serverRootDir + target);
 		
 		out.writeBytes(CRLF + CRLF);
 		
+		//Create a 1KiB buffer
 		byte[] buffer = new byte[1024];
         int bytes = 0;
-
+        
+        //While there are bytes being read
         while ((bytes = fis.read(buffer)) != -1) {
             out.write(buffer, 0, bytes);
         }
@@ -153,11 +167,13 @@ public class Response {
 	}
 	
 	//https://www.rfc-editor.org/rfc/rfc2616#section-14.18
+	//Convention for HTTP date format
 	private String getDate() {
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O");
 		return dtf.format(ZonedDateTime.now(ZoneOffset.UTC));
 	}
 	
+	//Log the client IP, the request and its outcome
 	private void logResponse() {
 		logger.info(String.format("%s - \"%s %s %s\" - %s %s",
 				ip, method, target, version,

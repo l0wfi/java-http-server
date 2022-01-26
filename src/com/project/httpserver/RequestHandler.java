@@ -20,6 +20,7 @@ public class RequestHandler implements Runnable {
 	private static myLogger myLogger;
 	private static Logger logger;
 	
+	//Initialize socket and logger
 	public RequestHandler(Socket socket) {
 		this.socket = socket;
 		myLogger = new myLogger();
@@ -34,6 +35,7 @@ public class RequestHandler implements Runnable {
 		}
 	}
 	
+	//Read input stream and create Request and Response objects
 	private void handleRequest() throws Exception {
 
 		in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -44,14 +46,17 @@ public class RequestHandler implements Runnable {
 		ArrayList<String> headers = new ArrayList<String>();
 		
 		String line = "";
+		//While data is being received
 		while ((line = in.readLine()) != null && (line.length() != 0)) {
-			if(line.contains("Content-Length:")) {
+			if (line.contains("Content-Length:")) {
+				//Get the content length for POST request
 				contentLength = Integer.parseInt(line.split(": ")[1]);
 			}
 			headers.add(line);
 		}
 		
 		String postContent = "";
+		//If there is content from POST request
 		if(contentLength != -1) {
 			// char array with size of content
             char [] contentArray = new char[contentLength];
@@ -61,13 +66,16 @@ public class RequestHandler implements Runnable {
             postContent = new String(contentArray);
 		}
 		
+		//If GET request
 		if (postContent.isEmpty()) {
 			clientReq = new Request(socket.getInetAddress().toString(), requestLine, headers);
 		}
+		//If POST request
 		else {
 			clientReq = new Request(socket.getInetAddress().toString(), requestLine, headers, postContent); 
 		}
 		
+		//Create response from request and send it
 		serverResp = new Response(clientReq);
 		serverResp.sendTo(out);
 		
