@@ -4,7 +4,12 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.Map;
 
 public class Response {
 	
@@ -22,6 +27,21 @@ public class Response {
 	private long contentLength;
 	private String statusLine;
 	private String entityHeaders;
+	private String responseHeaders;
+	
+	private String defaultErrorMessage =
+			"<!DOCTYPE html>"
+			+"<html>"
+			+	"<head>"
+			+		"<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\">"
+			+		"<title>Error $CODE</title>"
+			+	"</head>"
+			+	"<body style=\"text-align:center\">"
+			+		"<h1>$CODE</h1>"
+			+		"<p>$MESSAGE</p>"
+			+		"<hr>"
+			+	"</body>"
+			+"</html>";
 	
 	public Response(Request req) {
 		this.method = req.getMethod();
@@ -36,42 +56,44 @@ public class Response {
 		statusCode = findStatusCode();
 		createStatusLine();
 		System.out.println(statusLine);
-		out.writeBytes(statusLine);
+		out.write(statusLine.getBytes());
 		
+		responseHeaders = CRLF + "Date: " + getDate();
+		
+		String errorPage = "";
 		if (statusCode[0].equals("200")) {
 			if (contentLength != -1) {
 				entityHeaders = CRLF + "Content-Length: " + contentLength;
 				entityHeaders += CRLF + "Content-Type: " + mimeType;
 			}
 		} else {
-			// If the page content send is an error page
+			errorPage = createErrorPage(statusCode[0], statusCode[1]);
+			entityHeaders = CRLF + "Content-Length: " + errorPage.getBytes("UTF-8").length;
 		}
 		
-		System.out.println(entityHeaders);
-		out.writeBytes(entityHeaders);
+		System.out.println(responseHeaders + entityHeaders);
+		out.write(responseHeaders.getBytes());
+		out.write(entityHeaders.getBytes());
 		
-		if (statusCode[0].equals("200")) {
-			try {
-				FileInputStream fis = new FileInputStream(Server.serverRootDir + target);
+		if (!method.equals("HEAD")) {
+			if (statusCode[0].equals("200")) {
+				try {
+					writeTargetTo(out);
+					
+				} catch (Exception e) {
+					out.writeBytes(CRLF + CRLF);
+					out.writeBytes(createErrorPage("500", "Internal server error"));
+				}
 				
+			} else {
 				out.writeBytes(CRLF + CRLF);
-				
-				byte[] buffer = new byte[1024];
-		        int bytes = 0;
-		
-		        while ((bytes = fis.read(buffer)) != -1) {
-		            out.write(buffer, 0, bytes);
-		        }
-		        
-		        fis.close();
-			} catch (Exception e) {
-				// Send error 500
+				out.writeBytes(errorPage);
 			}
 		}
 	}
 	
 	private boolean supportedMethod() {
-		if (method.equals("GET") || method.equals("POST")) {
+		if (method.equals("GET") || method.equals("POST") || method.equals("HEAD")) {
 			return true;
 		}
 		return false;
@@ -96,6 +118,32 @@ public class Response {
 		statusLine = "HTTP/1.1" + " ";
 		statusLine += statusCode[0] + " ";
 		statusLine += statusCode[1];
+	}
+	
+	private String createErrorPage(String code, String message) {
+		return defaultErrorMessage.replace("$CODE", code)
+				.replace("$MESSAGE", message);
+	}
+	
+	private void writeTargetTo(DataOutputStream out) throws Exception {
+		FileInputStream fis = new FileInputStream(Server.serverRootDir + target);
+		
+		out.writeBytes(CRLF + CRLF);
+		
+		byte[] buffer = new byte[1024];
+        int bytes = 0;
+
+        while ((bytes = fis.read(buffer)) != -1) {
+            out.write(buffer, 0, bytes);
+        }
+        
+        fis.close();
+	}
+	
+	//https://www.rfc-editor.org/rfc/rfc2616#section-14.18
+	private String getDate() {
+		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O");
+		return dtf.format(ZonedDateTime.now(ZoneOffset.UTC));
 	}
 	
 }

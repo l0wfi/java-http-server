@@ -43,7 +43,7 @@ public class Server {
 		serverThreadCount = conf.getThreadCount();
 		serverRootDir = conf.getRootDir();
 		
-		logger.info(String.format("Starting server: port %d, threads %d, root directory %s",
+		logger.info(String.format("Starting: PORT %d, THREADS %d, ROOT DIR %s",
 				serverPort, serverThreadCount, serverRootDir));
 	}
 	

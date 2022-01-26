@@ -62,7 +62,6 @@ public class Request {
     private HashMap<String, String> parseHeaders(ArrayList<String> headers) {
     	HashMap<String, String> headerFields = new HashMap<String, String>();
     	for(String field : headers) {
-    		System.out.println();
     		headerFields.put(field.split(": ", 2)[0], field.split(": ", 2)[1]);
     	}
     	return headerFields;
