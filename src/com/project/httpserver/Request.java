@@ -1,13 +1,11 @@
 package com.project.httpserver;
 
-import java.io.File;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 
 public class Request {
 	
+	private String ip;
 	private String requestLine;
 	private HashMap<String, String> headers;
     private String method;
@@ -16,14 +14,15 @@ public class Request {
     private String GETParams;
     private String POSTParams;
     
-    public Request(String requestLine, ArrayList<String> headers) {
+    public Request(String ip, String requestLine, ArrayList<String> headers) {
+    	this.ip = ip;
     	this.requestLine = requestLine;
     	parseRequestLine();
     	this.headers = parseHeaders(headers);
     }
     
-    public Request(String requestLine, ArrayList<String> headers, String POSTParams) {
-    	this(requestLine, headers);
+    public Request(String ip, String requestLine, ArrayList<String> headers, String POSTParams) {
+    	this(ip, requestLine, headers);
 		this.POSTParams = POSTParams;
     }
     
@@ -45,7 +44,6 @@ public class Request {
     }
     
     private void parseRequestLine() {
-    	System.out.println(requestLine);
     	String[] elements = requestLine.split("\\s");
 		method = elements[0];
 		target = elements[1];
@@ -100,6 +98,10 @@ public class Request {
 	
 	public HashMap<String, String> getPOSTParams() {
 		return extractParameters(POSTParams);
+	}
+	
+	public String getIpAddr() {
+		return ip.replace("/", "");
 	}
     
 }

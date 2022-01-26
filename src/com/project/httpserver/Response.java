@@ -4,17 +4,18 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.logging.Logger;
+
 
 public class Response {
 	
 	private static final String CRLF = "\r\n";
 	
+	private String ip;
 	private String method;
 	private String target;
 	private String version;
@@ -28,6 +29,9 @@ public class Response {
 	private String statusLine;
 	private String entityHeaders;
 	private String responseHeaders;
+	
+	private static myLogger myLogger;
+	private static Logger logger;
 	
 	private String defaultErrorMessage =
 			"<!DOCTYPE html>"
@@ -44,6 +48,10 @@ public class Response {
 			+"</html>";
 	
 	public Response(Request req) {
+		myLogger = new myLogger();
+		logger = myLogger.getLogger();
+		
+		this.ip = req.getIpAddr();
 		this.method = req.getMethod();
 		this.target = req.getTarget();
 		this.version = req.getVersion();
@@ -55,7 +63,6 @@ public class Response {
 	public void sendTo(DataOutputStream out) throws IOException {
 		statusCode = findStatusCode();
 		createStatusLine();
-		System.out.println(statusLine);
 		out.write(statusLine.getBytes());
 		
 		responseHeaders = CRLF + "Date: " + getDate();
@@ -66,12 +73,12 @@ public class Response {
 				entityHeaders = CRLF + "Content-Length: " + contentLength;
 				entityHeaders += CRLF + "Content-Type: " + mimeType;
 			}
+			
 		} else {
 			errorPage = createErrorPage(statusCode[0], statusCode[1]);
 			entityHeaders = CRLF + "Content-Length: " + errorPage.getBytes("UTF-8").length;
 		}
 		
-		System.out.println(responseHeaders + entityHeaders);
 		out.write(responseHeaders.getBytes());
 		out.write(entityHeaders.getBytes());
 		
@@ -82,6 +89,7 @@ public class Response {
 					
 				} catch (Exception e) {
 					out.writeBytes(CRLF + CRLF);
+					statusCode = new String[] {"500", "Internal server error"};
 					out.writeBytes(createErrorPage("500", "Internal server error"));
 				}
 				
@@ -89,7 +97,11 @@ public class Response {
 				out.writeBytes(CRLF + CRLF);
 				out.writeBytes(errorPage);
 			}
+		} else {
+			out.writeBytes(CRLF + CRLF);
 		}
+		
+		logResponse();
 	}
 	
 	private boolean supportedMethod() {
@@ -144,6 +156,12 @@ public class Response {
 	private String getDate() {
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O");
 		return dtf.format(ZonedDateTime.now(ZoneOffset.UTC));
+	}
+	
+	private void logResponse() {
+		logger.info(String.format("%s - \"%s %s %s\" - %s %s",
+				ip, method, target, version,
+				statusCode[0], statusCode[1]));
 	}
 	
 }

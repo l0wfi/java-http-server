@@ -2,23 +2,10 @@ package com.project.httpserver;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.Socket;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.logging.FileHandler;
-import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
-
-import javax.accessibility.AccessibleExtendedTable;
-import javax.swing.text.AbstractDocument.BranchElement;
-import javax.xml.crypto.Data;
 
 public class RequestHandler implements Runnable {
 	
@@ -41,7 +28,6 @@ public class RequestHandler implements Runnable {
 	
 	public void run() {
 		try {
-			logger.info("Handling request");
 			handleRequest();
 		} catch (Exception e1) {
 			e1.printStackTrace();
@@ -75,18 +61,13 @@ public class RequestHandler implements Runnable {
             postContent = new String(contentArray);
 		}
 		
-		System.out.println(headers);
-		
-		logger.info("Request received, parsing");
-		
 		if (postContent.isEmpty()) {
-			clientReq = new Request(requestLine, headers);
+			clientReq = new Request(socket.getInetAddress().toString(), requestLine, headers);
 		}
 		else {
-			clientReq = new Request(requestLine, headers, postContent); 
+			clientReq = new Request(socket.getInetAddress().toString(), requestLine, headers, postContent); 
 		}
 		
-		logger.info("Sending response");
 		serverResp = new Response(clientReq);
 		serverResp.sendTo(out);
 		

@@ -3,6 +3,7 @@ package com.project.httpserver;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.PublicKey;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -12,6 +13,7 @@ public class Server {
 	
 	private static final String DEFAULT_CONFIG_PATH = System.getProperty("user.home") +
 			"/.JHttpServer/config/server.properties";
+	public static final String HTTP_VERSION = "HTTP/1.1";
 	
 	private static int serverPort;
 	private static int serverThreadCount;
@@ -38,7 +40,6 @@ public class Server {
 		myLogger = new myLogger();
 		logger = myLogger.getLogger();
 		
-		logger.info("Loading server parameters from config file");
 		serverPort = conf.getPort();
 		serverThreadCount = conf.getThreadCount();
 		serverRootDir = conf.getRootDir();
@@ -58,14 +59,12 @@ public class Server {
 		while (run) {
 			try {
 				connectionSocket = welcomingSocket.accept();
+				
 			} catch (IOException e) {
 				logger.log(Level.SEVERE, "Welcoming socket accept error", e.getCause());
 				e.printStackTrace();
 			}
 			
-			logger.info(String.format("Client connected on port %d with address %s",
-					connectionSocket.getPort(),
-					connectionSocket.getInetAddress().toString().replace("/", "")));
 			pool.execute(new RequestHandler(connectionSocket));
 		}
 		try {
